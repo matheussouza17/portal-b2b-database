@@ -2,40 +2,134 @@
 
 ## Visão Geral
 
-O banco de dados utiliza o schema `portal_b2b` no PostgreSQL.
-
-**Roles:**
+Schema: `portal_b2b` | Banco: PostgreSQL
 
 | Role | Tipo | Permissões |
 |------|------|------------|
-| `db_portal_b2b` | Admin/DDL | Owner do schema, DDL, DML |
-| `svc_portal_b2b` | Aplicação | SELECT, INSERT, UPDATE, DELETE (sem CREATE) |
+| `db_portal_b2b` | Admin/DDL | Owner, DDL, DML |
+| `svc_portal_b2b` | Aplicação | SELECT, INSERT, UPDATE, DELETE |
 
-> **Nota:** `svc_portal_b2b` não pode criar ou alterar objetos. Toda migração DDL deve ser executada como `db_portal_b2b`.
+> Toda migração DDL deve ser executada como `db_portal_b2b`. O `svc_portal_b2b` não tem permissão de CREATE.
 
-## Entidades
+---
 
-### 1. empresa
+## Tabelas
 
-Representa qualquer organização cadastrada. CNPJ e e-mail únicos.
+### 1. produtos_transporte
+
+Tipos de transporte disponíveis no sistema.
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
-| `id` | UUID | PK, default `gen_random_uuid()` |
+| `id` | UUID | PK |
+| `nome` | VARCHAR(150) | NOT NULL, UNIQUE (case-insensitive) |
+| `descricao` | VARCHAR(500) | NULL |
+| `ativo` | BOOLEAN | NOT NULL, default `TRUE` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
+| `usuario_cadastro` | UUID | NULL |
+| `ultima_alteracao` | TIMESTAMPTZ | NULL |
+| `usuario_alteracao` | UUID | NULL |
+
+---
+
+### 2. produtos_categoria
+
+Hierarquia de categorias. Auto-referenciada para suportar subcategorias.
+
+| Coluna | Tipo | Restrições |
+|--------|------|------------|
+| `id` | UUID | PK |
+| `categoria_pai_id` | UUID | FK → `produtos_categoria(id)`, NULL |
+| `nome` | VARCHAR(150) | NOT NULL, UNIQUE (case-insensitive) |
+| `descricao` | VARCHAR(500) | NULL |
+| `ativo` | BOOLEAN | NOT NULL, default `TRUE` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
+| `usuario_cadastro` | UUID | NULL |
+| `ultima_alteracao` | TIMESTAMPTZ | NULL |
+| `usuario_alteracao` | UUID | NULL |
+
+---
+
+### 3. produtos_unidade_medida
+
+| Coluna | Tipo | Restrições |
+|--------|------|------------|
+| `id` | UUID | PK |
+| `nome` | VARCHAR(150) | NOT NULL, UNIQUE (case-insensitive) |
+| `sigla` | VARCHAR(20) | NOT NULL, UNIQUE (case-insensitive) |
+| `descricao` | VARCHAR(500) | NULL |
+| `ativo` | BOOLEAN | NOT NULL, default `TRUE` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
+| `usuario_cadastro` | UUID | NULL |
+| `ultima_alteracao` | TIMESTAMPTZ | NULL |
+| `usuario_alteracao` | UUID | NULL |
+
+---
+
+### 4. produtos_produto
+
+Catálogo genérico de produtos. Sem preço e sem quantidade — esses dados ficam em `fornecimento` (RN-PROD-01/02).
+
+| Coluna | Tipo | Restrições |
+|--------|------|------------|
+| `id` | UUID | PK |
+| `transporte_id` | UUID | FK → `produtos_transporte(id)` |
+| `categoria_id` | UUID | FK → `produtos_categoria(id)` |
+| `unidade_medida_id` | UUID | FK → `produtos_unidade_medida(id)` |
+| `codigo` | VARCHAR(60) | NOT NULL, UNIQUE (case-insensitive) |
+| `nome` | VARCHAR(150) | NOT NULL |
+| `descricao` | VARCHAR(1000) | NULL |
+| `ativo` | BOOLEAN | NOT NULL, default `TRUE` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
+| `usuario_cadastro` | UUID | NULL |
+| `ultima_alteracao` | TIMESTAMPTZ | NULL |
+| `usuario_alteracao` | UUID | NULL |
+
+---
+
+### 5. perfil
+
+Papéis disponíveis no sistema.
+
+| Coluna | Tipo | Restrições |
+|--------|------|------------|
+| `id` | UUID | PK |
+| `nome` | VARCHAR(50) | NOT NULL, UNIQUE |
+
+**Seed:** `FORNECEDOR`, `COMPRADOR`, `TRANSPORTADORA`
+
+---
+
+### 6. empresa
+
+Representa qualquer organização cadastrada no sistema.
+
+| Coluna | Tipo | Restrições |
+|--------|------|------------|
+| `id` | UUID | PK |
 | `razao_social` | VARCHAR(255) | NOT NULL |
 | `nome_fantasia` | VARCHAR(255) | NULL |
 | `cnpj` | CHAR(14) | NOT NULL, UNIQUE |
 | `email` | VARCHAR(150) | NOT NULL, UNIQUE |
 | `telefone` | VARCHAR(20) | NULL |
 | `status` | VARCHAR(20) | NOT NULL, default `'ATIVO'` |
-| `data_cadastro` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
 | `ultima_alteracao` | TIMESTAMPTZ | NULL |
 
 ---
 
-### 1.1. usuario
+### 7. empresa_perfil
 
-Usuários vinculados a uma empresa.
+Associação N:N entre empresa e perfil. Uma empresa pode ter múltiplos perfis (RN-USER-02).
+
+| Coluna | Tipo | Restrições |
+|--------|------|------------|
+| `empresa_id` | UUID | PK, FK → `empresa(id)` ON DELETE CASCADE |
+| `perfil_id` | UUID | PK, FK → `perfil(id)` ON DELETE CASCADE |
+
+---
+
+### 8. usuario
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
@@ -46,36 +140,12 @@ Usuários vinculados a uma empresa.
 | `senha_hash` | TEXT | NOT NULL |
 | `telefone` | VARCHAR(20) | NULL |
 | `status` | VARCHAR(20) | NOT NULL, default `'ATIVO'` |
-| `data_cadastro` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
 | `ultima_alteracao` | TIMESTAMPTZ | NULL |
 
 ---
 
-### 2. perfil
-
-Papéis disponíveis no sistema. Valores fixos inseridos via seed.
-
-| Coluna | Tipo | Restrições |
-|--------|------|------------|
-| `id` | UUID | PK |
-| `nome` | VARCHAR(50) | NOT NULL, UNIQUE |
-
-**Valores:** `FORNECEDOR`, `COMPRADOR`, `TRANSPORTADORA`
-
----
-
-### 3. empresa_perfil
-
-Associação N:N entre empresa e perfil (RN-USER-02).
-
-| Coluna | Tipo | Restrições |
-|--------|------|------------|
-| `empresa_id` | UUID | PK, FK → `empresa(id)` ON DELETE CASCADE |
-| `perfil_id` | UUID | PK, FK → `perfil(id)` ON DELETE CASCADE |
-
----
-
-### 4. endereco
+### 9. endereco
 
 Endereços vinculados a empresas. Usado como origem em fornecimentos e destino em demandas.
 
@@ -91,43 +161,25 @@ Endereços vinculados a empresas. Usado como origem em fornecimentos e destino e
 
 ---
 
-### 5. produto
+### 10. fornecimento
 
-Catálogo genérico de produtos. **Sem preço e sem quantidade** (RN-PROD-01/02).  
-Pertence ao serviço de negociação/mercado — desacoplado de `produtos_produto`.
-
-| Coluna | Tipo | Restrições |
-|--------|------|------------|
-| `id` | UUID | PK |
-| `nome` | VARCHAR(150) | NOT NULL |
-| `categoria` | VARCHAR(100) | NULL |
-| `unidade_medida` | VARCHAR(20) | NULL |
-| `tipo_transporte` | VARCHAR(50) | NULL — RN-PROD-03 |
-| `ativo` | BOOLEAN | NOT NULL, default `TRUE` |
-| `data_cadastro` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
-| `ultima_alteracao` | TIMESTAMPTZ | NULL |
-
----
-
-### 6. fornecimento
-
-Oferta de um fornecedor para um produto (RN-FORN-01/02/05).
+Oferta de um fornecedor para um produto. Preço e quantidade ficam aqui, não no produto (RN-FORN-01/02).
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
 | `id` | UUID | PK |
 | `empresa_fornecedor_id` | UUID | FK → `empresa(id)` |
-| `produto_id` | UUID | FK → `produto(id)` |
+| `produto_id` | UUID | FK → `produtos_produto(id)` |
 | `endereco_origem_id` | UUID | FK → `endereco(id)` |
 | `preco_unitario` | DECIMAL(18,4) | NOT NULL, > 0 |
-| `quantidade_disponivel` | DECIMAL(18,4) | NOT NULL, >= 0 — RN-FORN-04 |
+| `quantidade_disponivel` | DECIMAL(18,4) | NOT NULL, >= 0 |
 | `ativo` | BOOLEAN | NOT NULL, default `TRUE` |
-| `data_cadastro` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
 | `ultima_alteracao` | TIMESTAMPTZ | NULL |
 
 ---
 
-### 7. demanda
+### 11. demanda
 
 Interesse de compra de um comprador (RN-DEM-01..05).
 
@@ -135,45 +187,41 @@ Interesse de compra de um comprador (RN-DEM-01..05).
 |--------|------|------------|
 | `id` | UUID | PK |
 | `empresa_comprador_id` | UUID | FK → `empresa(id)` |
-| `produto_id` | UUID | FK → `produto(id)` |
+| `produto_id` | UUID | FK → `produtos_produto(id)` |
 | `endereco_destino_id` | UUID | FK → `endereco(id)` |
 | `quantidade_desejada` | DECIMAL(18,4) | NOT NULL, > 0 |
 | `is_recorrente` | BOOLEAN | NOT NULL, default `FALSE` |
-| `data_proxima_geracao` | DATE | NULL — obrigatório se recorrente (RN-DEM-03) |
-| `status` | VARCHAR(30) | NOT NULL, default `'ABERTA'` — RN-DEM-05 |
-| `data_cadastro` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
-
-> **Constraint:** `is_recorrente = TRUE` exige `data_proxima_geracao IS NOT NULL`.
+| `data_proxima_geracao` | DATE | NULL — obrigatório se `is_recorrente = TRUE` |
+| `status` | VARCHAR(30) | NOT NULL, default `'ABERTA'` |
+| `data_cadastro` | TIMESTAMPTZ | NOT NULL |
 
 ---
 
-### 8. processo_negociacao
+### 12. processo_negociacao
 
-Gerencia a negociação (RN-MERC-01/02, RN-NEG-01..04).
+Gerencia a negociação de compra/venda. O modo é determinado pela relação entre oferta e demanda.
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
 | `id` | UUID | PK |
-| `produto_id` | UUID | FK → `produto(id)` |
-| `modo` | VARCHAR(20) | NOT NULL — `direto`, `leilao_direto`, `leilao_reverso` |
+| `produto_id` | UUID | FK → `produtos_produto(id)` |
+| `modo` | VARCHAR(20) | NOT NULL, check: `direto`, `leilao_direto`, `leilao_reverso` |
 | `status` | VARCHAR(20) | NOT NULL, default `'ABERTO'` |
-| `data_inicio` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `data_inicio` | TIMESTAMPTZ | NOT NULL |
 | `data_fim` | TIMESTAMPTZ | NULL |
 | `valor_reserva` | DECIMAL(18,4) | NULL |
 
-**Modos (RN-MERC-01):**
-
-| Condição | Modo |
-|----------|------|
+| Condição de mercado | Modo |
+|---------------------|------|
 | oferta = demanda | `direto` |
 | demanda > oferta | `leilao_direto` |
 | oferta > demanda | `leilao_reverso` |
 
 ---
 
-### 9. lance
+### 13. lance
 
-Propostas feitas durante um processo (RN-NEG-02/03).
+Propostas feitas durante um processo de negociação.
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
@@ -182,13 +230,13 @@ Propostas feitas durante um processo (RN-NEG-02/03).
 | `empresa_id` | UUID | FK → `empresa(id)` |
 | `valor_unitario` | DECIMAL(18,4) | NOT NULL, > 0 |
 | `quantidade` | DECIMAL(18,4) | NOT NULL, > 0 |
-| `data_lance` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `data_lance` | TIMESTAMPTZ | NOT NULL |
 
 ---
 
-### 10. pedido
+### 14. pedido
 
-Formaliza a compra após negociação (RN-PED-01..04).
+Formaliza a compra após negociação concluída.
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
@@ -196,19 +244,18 @@ Formaliza a compra após negociação (RN-PED-01..04).
 | `processo_id` | UUID | FK → `processo_negociacao(id)` |
 | `empresa_comprador_id` | UUID | FK → `empresa(id)` |
 | `empresa_fornecedor_id` | UUID | FK → `empresa(id)` |
-| `fornecimento_id` | UUID | FK → `fornecimento(id)` — RN-PED-02 |
+| `fornecimento_id` | UUID | FK → `fornecimento(id)` |
 | `frete_selecionado_id` | UUID | FK → `frete_selecionado(id)`, NULL inicial |
-| `valor_comissao` | DECIMAL(18,4) | NULL — RN-PED-04 |
+| `valor_comissao` | DECIMAL(18,4) | NULL |
 | `valor_total` | DECIMAL(18,4) | NOT NULL, > 0 |
-| `status` | VARCHAR(20) | NOT NULL, default `'PENDENTE'` — RN-PED-03 |
-| `data_pedido` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `status` | VARCHAR(20) | NOT NULL, default `'PENDENTE'` |
+| `data_pedido` | TIMESTAMPTZ | NOT NULL |
 
-> `frete_selecionado_id` é NULL na criação. Preenchido após seleção do frete.  
-> Referência circular resolvida via `ALTER TABLE` após criação de `frete_selecionado`.
+> `frete_selecionado_id` começa NULL e é preenchido após seleção do frete.
 
 ---
 
-### 11. item_pedido
+### 15. item_pedido
 
 Itens que compõem o pedido.
 
@@ -216,16 +263,16 @@ Itens que compõem o pedido.
 |--------|------|------------|
 | `id` | UUID | PK |
 | `pedido_id` | UUID | FK → `pedido(id)` |
-| `produto_id` | UUID | FK → `produto(id)` |
+| `produto_id` | UUID | FK → `produtos_produto(id)` |
 | `fornecimento_id` | UUID | FK → `fornecimento(id)` |
 | `quantidade` | DECIMAL(18,4) | NOT NULL, > 0 |
 | `valor_unitario` | DECIMAL(18,4) | NOT NULL, > 0 |
 
 ---
 
-### 12. solicitacao_frete
+### 16. solicitacao_frete
 
-Gerada a partir do pedido (RN-LOG-01/02).
+Gerada a partir do pedido para cotação de frete.
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
@@ -233,13 +280,13 @@ Gerada a partir do pedido (RN-LOG-01/02).
 | `pedido_id` | UUID | FK → `pedido(id)` |
 | `tipo_transporte` | VARCHAR(50) | NOT NULL |
 | `status` | VARCHAR(30) | NOT NULL, default `'AGUARDANDO'` |
-| `data_criacao` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `data_criacao` | TIMESTAMPTZ | NOT NULL |
 
 ---
 
-### 13. cotacao_frete
+### 17. cotacao_frete
 
-Propostas de frete por transportadoras (RN-LOG-03, RN-TRANS-04).
+Propostas de frete enviadas por transportadoras.
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
@@ -248,39 +295,41 @@ Propostas de frete por transportadoras (RN-LOG-03, RN-TRANS-04).
 | `transportadora_id` | UUID | FK → `empresa(id)` |
 | `valor` | DECIMAL(18,4) | NOT NULL, > 0 |
 | `prazo` | INTEGER | NOT NULL, > 0 — dias úteis |
-| `data_cotacao` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
-
-> `prazo` definido como `INTEGER` (dias úteis) para permitir ordenação e comparação.
+| `data_cotacao` | TIMESTAMPTZ | NOT NULL |
 
 ---
 
-### 14. frete_selecionado
+### 18. frete_selecionado
 
-Frete escolhido para o pedido (RN-LOG-04).
+Frete escolhido para o pedido. Um pedido só pode ter um frete selecionado.
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
 | `id` | UUID | PK |
-| `pedido_id` | UUID | FK → `pedido(id)`, UNIQUE — 1 frete por pedido |
+| `pedido_id` | UUID | FK → `pedido(id)`, UNIQUE |
 | `cotacao_id` | UUID | FK → `cotacao_frete(id)` |
-| `data_selecao` | TIMESTAMPTZ | NOT NULL, default `NOW()` |
+| `data_selecao` | TIMESTAMPTZ | NOT NULL |
 
 ---
 
 ## Relacionamentos
 
 ```
-empresa ──────────────── empresa_perfil ─────── perfil
-empresa ──────────────── usuario
-empresa ──────────────── endereco
-empresa ──────────────── fornecimento ─────────── produto
-empresa ──────────────── demanda ──────────────── produto
-empresa ──────────────── lance ────────────────── processo_negociacao
-processo_negociacao ──── pedido ◄─────────────── frete_selecionado
-pedido ───────────────── item_pedido
-pedido ───────────────── solicitacao_frete ─────► cotacao_frete
-                                                        │
-                                              frete_selecionado ◄─┘
+produtos_transporte ◄──┐
+produtos_categoria  ◄──┼── produtos_produto ──► fornecimento
+produtos_unidade_medida ┘         │            ► demanda
+                                  └──────────► processo_negociacao
+                                               ► item_pedido
+
+empresa ──► empresa_perfil ──► perfil
+empresa ──► usuario
+empresa ──► endereco
+empresa ──► fornecimento
+empresa ──► demanda
+empresa ──► lance ──► processo_negociacao
+processo_negociacao ──► pedido ──► item_pedido
+                                ──► solicitacao_frete ──► cotacao_frete ──► frete_selecionado
+                                ◄── frete_selecionado
 ```
 
 ---
@@ -289,52 +338,11 @@ pedido ───────────────── solicitacao_frete ─
 
 | Aspecto | Padrão |
 |---------|--------|
-| PKs | UUID com `gen_random_uuid()` |
-| Timestamps | `TIMESTAMPTZ` com default `NOW()` |
-| Soft delete | campo `ativo BOOLEAN` nas entidades principais |
-| Auditoria | `data_cadastro` + `ultima_alteracao` em todas as tabelas |
-| Status | `VARCHAR` com valores em SCREAMING_SNAKE_CASE |
-| Nomenclatura | `snake_case`, sem prefixo de tabela nas colunas |
-| Search path | `portal_b2b, public` — prefixo `portal_b2b.` desnecessário nas queries |
-| Decimais | `DECIMAL(18,4)` para valores monetários e quantidades |
+| PKs | UUID, `gen_random_uuid()` |
+| Timestamps | `TIMESTAMPTZ`, default `NOW()` |
+| Soft delete | `ativo BOOLEAN` |
+| Auditoria | `data_cadastro` + `ultima_alteracao` |
+| Status | SCREAMING_SNAKE_CASE |
+| Decimais | `DECIMAL(18,4)` |
 | Prazo frete | `INTEGER` (dias úteis) |
-
----
-
-## Diferenças em relação ao script original
-
-| Item | Script original (`b2b`) | Versão final (`portal_b2b`) |
-|------|------------------------|------------------------------|
-| Schema | `b2b` | `portal_b2b` |
-| `demanda.status` | ausente | adicionado — RN-DEM-05 |
-| `solicitacao_frete.status` | ausente | adicionado |
-| `solicitacao_frete.data_criacao` | ausente | adicionado |
-| `pedido.data_pedido` | ausente | adicionado |
-| `usuario.data_cadastro` | ausente | adicionado |
-| `cotacao_frete.prazo` | `VARCHAR(100)` | `INTEGER` (dias úteis) |
-| Ownership | não definido | `db_portal_b2b` em todos os objetos |
-| Grants explícitos | não definidos | `svc_portal_b2b` com DML |
-| CHECKs | ausentes | adicionados em valores e quantidades |
-
----
-
-## Ordem de Criação (migrations)
-
-```
-1.  perfil
-2.  empresa
-3.  empresa_perfil
-4.  usuario
-5.  endereco
-6.  produto
-7.  fornecimento
-8.  demanda
-9.  processo_negociacao
-10. lance
-11. pedido                    ← sem frete_selecionado_id ainda
-12. item_pedido
-13. solicitacao_frete
-14. cotacao_frete
-15. frete_selecionado
-16. ALTER TABLE pedido        ← adiciona FK frete_selecionado_id (fecha referência circular)
-```
+| Nomenclatura | `snake_case` sem prefixo |
