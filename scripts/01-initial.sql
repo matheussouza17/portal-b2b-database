@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS portal_b2b;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'db_portal_b2b') THEN
-        CREATE ROLE db_portal_b2b WITH LOGIN PASSWORD 'hGZpVG7YTzW5pHM';
+        CREATE ROLE db_portal_b2b WITH LOGIN PASSWORD '****************';
     END IF;
 
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'svc_portal_b2b') THEN
