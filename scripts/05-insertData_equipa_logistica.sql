@@ -1,3 +1,14 @@
+-- 1. Muda o dono da tabela (isso arrasta a sequência junto automaticamente) --> feito com user postgres
+ALTER TABLE portal_b2b.health_check OWNER TO db_portal_b2b;
+
+-- 2. Agora, como db_portal_b2b, já podes dar as permissões para a aplicação
+GRANT USAGE, SELECT, UPDATE ON SEQUENCE portal_b2b.health_check_id_seq TO svc_portal_b2b;
+GRANT SELECT, INSERT ON portal_b2b.health_check TO svc_portal_b2b;
+
+-- Executar como db_portal_b2b
+GRANT USAGE, SELECT, UPDATE ON SEQUENCE portal_b2b.health_check_id_seq TO svc_portal_b2b;
+GRANT SELECT, INSERT ON portal_b2b.health_check TO svc_portal_b2b;
+
 -- 1. Inserir Perfis (Caso não existam)
 INSERT INTO portal_b2b.perfil (nome) 
 VALUES ('TRANSPORTADORA'), ('COMPRADOR'), ('FORNECEDOR')
