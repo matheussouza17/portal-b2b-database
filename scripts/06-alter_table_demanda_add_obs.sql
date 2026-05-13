@@ -10,12 +10,5 @@ ALTER TABLE portal_b2b.demanda
 ALTER TABLE portal_b2b.demanda
     ADD COLUMN IF NOT EXISTS ultima_alteracao     TIMESTAMPTZ NULL;
 
-
-ALTER TABLE portal_b2b.demanda
-    RENAME COLUMN data_cadastro    TO data_criacao;
-
-ALTER TABLE portal_b2b.demanda
-    RENAME COLUMN ultima_alteracao TO atualizado_em;
-
 ALTER TABLE portal_b2b.demanda
     DROP COLUMN IF EXISTS data_proxima_geracao;
