@@ -38,6 +38,8 @@ Este repositório contém a documentação e os scripts oficiais de definição 
 5. **Soft delete:** Campo `ativo BOOLEAN` nas entidades principais.
 6. **Status:** Valores em `SCREAMING_SNAKE_CASE` (ex: `'ATIVO'`, `'PENDENTE'`).
 
+> **Exceção:** O módulo de demanda utiliza `data_criacao` e `atualizado_em` por convenção da equipe responsável.
+
 ---
 
 ## 📂 Organização do Repositório
@@ -45,12 +47,14 @@ Este repositório contém a documentação e os scripts oficiais de definição 
 ```text
 .
 ├── doc/
-│   └── doc_bd.md                         # Documentação completa do modelo ER
+│   └── doc_bd.md                           # Documentação completa do modelo ER
 ├── scripts/
-│   ├── 01-initial.sql                    # Extensão pgcrypto e criação do schema
-│   ├── 02-criacao_produtos.sql           # Tabelas do módulo de produtos
-│   ├── 03-reorganizacao_permissoes.sql   # Ownership, grants e search_path
-│   └── 04-criacao_tabelas_principais.sql # Demais tabelas do modelo principal
+│   ├── 01-initial.sql                      # Schema, roles, permissões e health_check
+│   ├── 02-criacao_produtos.sql             # Módulo de produtos (tabelas, triggers, índices)
+│   ├── 03-reorganizacao_permissoes.sql     # Ownership, grants e search_path
+│   ├── 04-criacao_tabelas_principais.sql   # Tabelas principais do modelo
+│   ├── 05-modulo_demanda.sql               # Módulo de demanda (novas tabelas + alterações)
+│   └── 06-demanda_alinhamento.sql          # Ajustes finais de alinhamento com equipe de demanda
 └── README.md
 ```
 
@@ -65,6 +69,8 @@ psql -h 34.29.84.207 -U db_portal_b2b -d portal_b2b -f scripts/01-initial.sql
 psql -h 34.29.84.207 -U db_portal_b2b -d portal_b2b -f scripts/02-criacao_produtos.sql
 psql -h 34.29.84.207 -U db_portal_b2b -d portal_b2b -f scripts/03-reorganizacao_permissoes.sql
 psql -h 34.29.84.207 -U db_portal_b2b -d portal_b2b -f scripts/04-criacao_tabelas_principais.sql
+psql -h 34.29.84.207 -U db_portal_b2b -d portal_b2b -f scripts/05-modulo_demanda.sql
+psql -h 34.29.84.207 -U db_portal_b2b -d portal_b2b -f scripts/06-demanda_alinhamento.sql
 ```
 
 ---
