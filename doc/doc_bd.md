@@ -187,16 +187,16 @@ Interesse de compra de um comprador (RN-DEM-01..05).
 
 | Coluna | Tipo | Restrições |
 |--------|------|------------|
-| `id` | UUID | PK |
+| `id_demanda` | UUID | PK |
 | `id_empresa_comprador` | UUID | FK → `empresa(id)` |
-| `id_usuario_criador` | UUID | NULL |
 | `id_produto` | UUID | FK → `produtos_produto(id)` |
 | `id_endereco_destino` | UUID | FK → `endereco_entrega(id_endereco)` |
 | `quantidade_desejada` | DECIMAL(12,3) | NOT NULL, > 0 |
+| `status` | VARCHAR(20) | NOT NULL, default `'ABERTA'` |
+| `id_usuario_criador` | UUID | NULL |
 | `preco_maximo` | DECIMAL(12,2) | NULL |
 | `prioridade` | VARCHAR(10) | NULL |
 | `is_recorrente` | BOOLEAN | NOT NULL, default `FALSE` |
-| `status` | VARCHAR(20) | NOT NULL, default `'ABERTA'` |
 | `observacoes` | TEXT | NULL |
 | `data_criacao` | TIMESTAMPTZ | NOT NULL |
 | `atualizado_em` | TIMESTAMPTZ | NULL |
@@ -237,6 +237,7 @@ Endereço de entrega detalhado, específico do módulo de demanda.
 | `ativo` | BOOLEAN | NOT NULL, default `TRUE` |
 | `data_criacao` | TIMESTAMPTZ | NOT NULL |
 | `atualizado_em` | TIMESTAMPTZ | NULL |
+| `apelido` | VARCHAR(50) | NULL |
 
 ---
 
