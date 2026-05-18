@@ -197,6 +197,7 @@ Interesse de compra de um comprador (RN-DEM-01..05).
 | `preco_maximo` | DECIMAL(12,2) | NULL |
 | `prioridade` | VARCHAR(10) | NULL |
 | `is_recorrente` | BOOLEAN | NOT NULL, default `FALSE` |
+| `is_pedido` | BOOLEAN | NOT NULL, default `FALSE` |
 | `observacoes` | TEXT | NULL |
 | `data_criacao` | TIMESTAMPTZ | NOT NULL |
 | `atualizado_em` | TIMESTAMPTZ | NULL |
