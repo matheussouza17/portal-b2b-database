@@ -201,6 +201,16 @@ Interesse de compra de um comprador (RN-DEM-01..05).
 | `observacoes` | TEXT | NULL |
 | `data_criacao` | TIMESTAMPTZ | NOT NULL |
 | `atualizado_em` | TIMESTAMPTZ | NULL |
+| `tipo_transporte` | VARCHAR(50) | NULL, default `'RODOVIARIO'` |
+| `peso_carga` | DECIMAL(12,2) | NULL |
+| `cep_origem` | VARCHAR(9) | NULL |
+| `cep_destino` | VARCHAR(9) | NULL |
+| `id_fornecedor` | UUID | FK → `empresa(id)`, NULL |
+| `preco_final` | DECIMAL(12,2) | NULL |
+| `valor_total` | DECIMAL(12,2) | NULL |
+| `id_frete_selecionado` | UUID | FK → `frete_selecionado(id)`, NULL |
+| `valor_frete` | DECIMAL(12,2) | NULL |
+| `status_frete` | VARCHAR(30) | NULL, default `'PENDENTE'` |
 
 ---
 
@@ -401,7 +411,8 @@ Frete escolhido para o pedido. Um pedido só pode ter um frete selecionado.
 
 ## Relacionamentos
 
-```
+---
+
 produtos_transporte ◄──┐
 produtos_categoria  ◄──┼── produtos_produto ──► fornecimento
 produtos_unidade_medida ┘         │            ► demanda
